@@ -1,0 +1,32 @@
+image_source:
+  package: usb_cam
+  plugin: usb_cam::UsbCamNode
+  parameters:
+    video_device: /dev/video0
+    image_width: 640
+    image_height: 480
+    pixel_format: yuyv
+    frame_rate: 30.0
+
+image_preprocessor:
+  package: nav2_perception_pipelines
+  plugin: nav2_perception_pipelines::ImagePreprocessorNode
+  parameters:
+    target_width: 640
+    target_height: 384
+    publish_rate: 10.0
+
+depth_estimator:
+  package: depth_anything_v2_ros2
+  plugin: depth_anything::DepthAnythingNode
+  parameters:
+    model_path: /path/to/model
+    encoder: vitl
+
+pointcloud_projection:
+  package: nav2_perception_pipelines
+  plugin: nav2_perception_pipelines::DepthToPointCloudNode
+  parameters:
+    min_height: 0.05
+    max_height: 1.5
+    max_range: 5.0

@@ -1,32 +1,45 @@
 image_source:
+  type: rgb        # rgb | depth
   package: usb_cam
   plugin: usb_cam::UsbCamNode
   parameters:
     video_device: /dev/video0
     image_width: 640
     image_height: 480
-    pixel_format: yuyv
+    pixel_format: mjpeg2rgb
     frame_rate: 30.0
+  topics:
+    output_topic: /image_raw
+    camera_info_topic: /camera_info
 
 image_preprocessor:
-  package: nav2_perception_pipelines
-  plugin: nav2_perception_pipelines::ImagePreprocessorNode
+  enabled: true
   parameters:
-    target_width: 640
-    target_height: 384
-    publish_rate: 10.0
+    resize:
+      width: 640
+      height: 384
+    crop_decimate:
+      x_offset: 0
+      y_offset: 0
+      width: 640
+      height: 480
+      decimation_x: 1
+      decimation_y: 1
 
 depth_estimator:
-  package: depth_anything_v2_ros2
-  plugin: depth_anything::DepthAnythingNode
+  enabled: true
+  package: depth_anything_v3
+  plugin: depth_anything_v3::DepthAnythingV3Node
+  # Model path can be:
+  # - Relative to package share directory
+  # - OR absolute path
+  model_path: models/DA3METRIC-LARGE.fp16-batch1.engine
+  model_path_name_argument: 'onnx_path'
   parameters:
-    model_path: /path/to/model
-    encoder: vitl
+    precision: fp16
+  topics:
+    input_image: "~/input/image"
+    input_camera_info: "~/input/camera_info"
+    output_depth: "~/output/depth_image"
 
-pointcloud_projection:
-  package: nav2_perception_pipelines
-  plugin: nav2_perception_pipelines::DepthToPointCloudNode
-  parameters:
-    min_height: 0.05
-    max_height: 1.5
-    max_range: 5.0
+    

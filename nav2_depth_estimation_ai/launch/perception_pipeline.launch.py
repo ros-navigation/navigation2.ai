@@ -25,7 +25,7 @@ def generate_launch_description():
 
     cfg = load_yaml(
         os.path.join(
-            get_package_share_directory('nav2_perception_pipelines'),
+            get_package_share_directory('nav2_depth_estimation_ai'),
             'config',
             'perception_pipeline.yaml'
         )

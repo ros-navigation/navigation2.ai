@@ -33,7 +33,7 @@ depth_estimator:
   # Model path can be:
   # - Relative to package share directory
   # - OR absolute path
-  model_path: models/DA3METRIC-LARGE.fp16-batch1.engine
+  model_path: models/DA3METRIC-LARGE.onnx
   model_path_name_argument: 'onnx_path'
   parameters:
     precision: fp16

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>nav2_perception_pipelines</name>
+  <name>nav2_depth_estimation_ai</name>
   <version>0.1.0</version>
   <description> A ROS 2 composable perception pipeline that integrates camera driver,
     image preprocessing, depth estimation, and point cloud projection into a modular component

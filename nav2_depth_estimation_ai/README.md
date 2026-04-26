@@ -1,4 +1,4 @@
-# nav2_perception_pipelines
+# nav2_depth_estimation_ai
 
 This package provides a **perception pipeline** using AI-based depth estimation using DepthAnything V3 from RGB images for use in navigation and mobility tasks.
 
@@ -17,7 +17,7 @@ Preprocess -->|Processed Image| Depth[Depth Estimator]
 
 Depth -->|Depth Image| Projection[PointCloud Projection]
 
-Projection -->|PointCloud| Output((Output))
+Projection -->|PointCloud| Nav2Costmap((Nav2Costmap))
 ```
 
 The pipeline performs the following transformations:
@@ -48,14 +48,6 @@ The pipeline can be configured with different nodes. A typical setup may include
 
 - `usb_cam` as the **RGB image source**
 - [depth_anything_v3](https://github.com/ika-rwth-aachen/ros2-depth-anything-v3-trt) as the **depth estimation model**
-
-## Configuration
-
-The pipeline is configured using a YAML file:
-
-```
-config/perception_pipeline.yaml
-```
 
 ---
 
@@ -159,7 +151,7 @@ depth_estimator:
 Launch the pipeline:
 
 ```bash
-ros2 launch nav2_perception_pipelines perception_pipeline.launch.py
+ros2 launch nav2_depth_estimation_ai perception_pipeline.launch.py
 ```
 
 All nodes run inside a **ComposableNodeContainer**.

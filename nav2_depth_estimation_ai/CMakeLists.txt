@@ -4,8 +4,9 @@ project(nav2_depth_estimation_ai)
 find_package(ament_cmake REQUIRED)
 
 install(DIRECTORY
-  launch
   config
+  launch
+  params
   DESTINATION share/${PROJECT_NAME}
 )
 

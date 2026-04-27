@@ -1,0 +1,51 @@
+usb_cam:
+  ros__parameters:
+    video_device: /dev/video0
+    image_width: 640
+    image_height: 480
+    pixel_format: mjpeg2rgb
+    frame_rate: 30.0
+
+crop_decimate:
+  ros__parameters:
+    x_offset: 0
+    y_offset: 0
+    width: 640
+    height: 480
+    decimation_x: 1
+    decimation_y: 1
+
+resize:
+  ros__parameters:
+    width: 504
+    height: 280
+
+
+depth_anything_v3:
+  ros__parameters:
+    # Model configuration
+    onnx_path: "/home/asus/backup/zzzzz/ros2/personal_projects/ai_ws/install/depth_anything_v3/share/depth_anything_v3/models/DA3METRIC-LARGE.onnx"
+    precision: "fp16"  # fp16 or fp32
+    
+    # Debug configuration
+    enable_debug: true
+    debug_colormap: "JET"  # JET, HOT, COOL, SPRING, SUMMER, AUTUMN, WINTER, BONE, GRAY, HSV, PARULA, PLASMA, INFERNO, VIRIDIS, MAGMA, CIVIDIS
+    debug_filepath: "/tmp/depth_anything_v3_debug/"
+    write_colormap: false
+    debug_colormap_min_depth: 0.0    # Minimum depth value for colormap visualization
+    debug_colormap_max_depth: 50.0   # Maximum depth value for colormap visualization
+    sky_threshold: 0.3               # Threshold for sky classification (lower = more sky)
+    sky_depth_cap: 200.0             # Maximum depth value to fill sky regions
+    
+    # Point cloud downsampling (1 = no downsampling, 10 = every 10th point)
+    point_cloud_downsample_factor: 2
+    
+    # Point cloud colorization with RGB from input image
+    colorize_point_cloud: true  # Set to true to publish RGB point cloud instead of XYZ only
+
+
+pointcloud:
+  ros__parameters:
+    queue_size: 10
+    colorize: true  # Set to true to publish RGB point cloud instead of XYZ only
+    approximate_sync: true  # Set to true to use ApproximateTimeSynchronizer instead of TimeSynchronizer

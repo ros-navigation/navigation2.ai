@@ -165,12 +165,13 @@ def generate_launch_description() -> LaunchDescription:
                     ),
                     ComposableNode(
                         package="depth_image_proc",
-                        plugin="depth_image_proc::PointCloudXyzNode",
+                        plugin="depth_image_proc::PointCloudXyzrgbNode",
                         name="pointcloud",
                         parameters=[params_file],
                         remappings=[
-                            ('camera_info', '/resize/camera_info'),
-                            ('image_rect', 'depth_image'),
+                            ('rgb/camera_info', '/resize/camera_info'),
+                            ('rgb/image_rect_color', '/resize/image_raw'),
+                            ('depth_registered/image_rect', 'depth_image'),
                             ('points', '/pipeline/points'),
                         ],
                         extra_arguments=[

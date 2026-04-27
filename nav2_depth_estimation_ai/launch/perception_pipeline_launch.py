@@ -169,10 +169,10 @@ def generate_launch_description() -> LaunchDescription:
                         name="pointcloud",
                         parameters=[params_file],
                         remappings=[
-                            ('rgb/camera_info', '/resize/camera_info'),
-                            ('rgb/image_rect_color', '/resize/image_raw'),
-                            ('depth_registered/image_rect', 'depth_image'),
-                            ('points', '/pipeline/points'),
+                            ("rgb/camera_info", "/resize/camera_info"),
+                            ("rgb/image_rect_color", "/resize/image_raw"),
+                            ("depth_registered/image_rect", "depth_image"),
+                            ("points", "/pipeline/points"),
                         ],
                         extra_arguments=[
                             {"use_intra_process_comms": use_intra_process_comms}

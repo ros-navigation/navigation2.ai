@@ -33,7 +33,7 @@ The resulting point cloud can be used by **Nav2 perception pipelines, mapping sy
 
 Perception pipeline that generates depth maps and point clouds from RGB input.
 
-https://github.com/user-attachments/assets/b823b026-4960-4dca-8778-71c5879e88aa
+https://github.com/user-attachments/assets/12ce2808-099f-4718-b8c1-1de120bb601a
 
 ## Dependencies
 

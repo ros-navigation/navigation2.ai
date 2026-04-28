@@ -28,7 +28,7 @@ depth_anything_v3:
     precision: "fp16"  # fp16 or fp32
     
     # Debug configuration
-    enable_debug: true
+    enable_debug: false
     debug_colormap: "JET"  # JET, HOT, COOL, SPRING, SUMMER, AUTUMN, WINTER, BONE, GRAY, HSV, PARULA, PLASMA, INFERNO, VIRIDIS, MAGMA, CIVIDIS
     debug_filepath: "/tmp/depth_anything_v3_debug/"
     write_colormap: false

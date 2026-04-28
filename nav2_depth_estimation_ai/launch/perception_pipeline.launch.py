@@ -117,16 +117,6 @@ def generate_launch_description() -> LaunchDescription:
                 remapping=[
                     ("/image/camera_info", "/image_crop_decimate/camera_info"),
                     ("/image/image_raw", "/image_crop_decimate/image_raw"),
-                    # NOTE: this camera_info topic is not remapping
-                    # (
-                    #     "/resize/camera_info",
-                    #     "/pipeline/camera_info_preprocessed",
-                    # ),
-                    # ("/resize/image_raw", "/pipeline/image_preprocessed"),
-                    # (
-                    #     "/resize/image_raw/compressed",
-                    #     "/pipeline/image_preprocessed/compressed",
-                    # ),
                 ],
                 arguments=["--ros-args", "--log-level", log_level],
             ),
@@ -139,7 +129,7 @@ def generate_launch_description() -> LaunchDescription:
                 parameters=[params_file],
                 remapping=[
                     ("~/input/camera_info", "/resize/camera_info"),
-                    ("~/input/image", "/resize/image_raw/compressed"),
+                    ("~/input/image", "/resize/image_raw"),
                     ("~/output/depth_image", "depth_image"),
                 ],
                 arguments=["--ros-args", "--log-level", log_level],

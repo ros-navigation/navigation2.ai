@@ -75,18 +75,91 @@ def generate_launch_description() -> LaunchDescription:
         "log_level", default_value="info", description="log level"
     )
 
-    # TODO(Sachin): Add nodes later
     load_nodes = GroupAction(
         condition=IfCondition(PythonExpression(["not ", use_composition])),
         actions=[
             Node(
                 package="usb_cam",
+                name="usb_cam",
                 executable="usb_cam_exe",
                 output="screen",
                 respawn=use_respawn,
                 parameters=[params_file],
+                remapping=[
+                    ("/camera_info", "/pipeline/camera_info"),
+                    ("/image_raw", "/pipeline/image_raw"),
+                ],
                 arguments=["--ros-args", "--log-level", log_level],
-            )
+                condition=IfCondition(use_usb_cam),
+            ),
+            Node(
+                package="image_proc",
+                name="crop_decimate",
+                executable="crop_decimate_node",
+                output="screen",
+                respawn=use_respawn,
+                parameters=[params_file],
+                remapping=[
+                    ("/in/camera_info", "/pipeline/camera_info"),
+                    ("/in/image_raw", "/pipeline/image_raw"),
+                    ("/out/camera_info", "/image_crop_decimate/camera_info"),
+                    ("/out/image_raw", "/image_crop_decimate/image"),
+                ],
+                arguments=["--ros-args", "--log-level", log_level],
+            ),
+            Node(
+                package="image_proc",
+                name="resize",
+                executable="resize_node",
+                output="screen",
+                respawn=use_respawn,
+                parameters=[params_file],
+                remapping=[
+                    ("/image/camera_info", "/image_crop_decimate/camera_info"),
+                    ("/image/image_raw", "/image_crop_decimate/image_raw"),
+                    # NOTE: this camera_info topic is not remapping
+                    # (
+                    #     "/resize/camera_info",
+                    #     "/pipeline/camera_info_preprocessed",
+                    # ),
+                    # ("/resize/image_raw", "/pipeline/image_preprocessed"),
+                    # (
+                    #     "/resize/image_raw/compressed",
+                    #     "/pipeline/image_preprocessed/compressed",
+                    # ),
+                ],
+                arguments=["--ros-args", "--log-level", log_level],
+            ),
+            Node(
+                package="depth_anything_v3",
+                name="depth_anything_v3",
+                executable="depth_anything_v3_exe",
+                output="screen",
+                respawn=use_respawn,
+                parameters=[params_file],
+                remapping=[
+                    ("~/input/camera_info", "/resize/camera_info"),
+                    ("~/input/image", "/resize/image_raw/compressed"),
+                    ("~/output/depth_image", "depth_image"),
+                ],
+                arguments=["--ros-args", "--log-level", log_level],
+                condition=IfCondition(use_depth_anything),
+            ),
+            Node(
+                package="depth_image_proc",
+                name="pointcloud",
+                executable="point_cloud_xyzrgb_node",
+                output="screen",
+                respawn=use_respawn,
+                parameters=[params_file],
+                remapping=[
+                    ("rgb/camera_info", "/resize/camera_info"),
+                    ("rgb/image_rect_color", "/resize/image_raw"),
+                    ("depth_registered/image_rect", "depth_image"),
+                    ("points", "/pipeline/points"),
+                ],
+                arguments=["--ros-args", "--log-level", log_level],
+            ),
         ],
     )
 

@@ -49,6 +49,39 @@ The pipeline can be configured with different nodes. A typical setup may include
 - `usb_cam` as the **RGB image source**
 - [depth_anything_v3](https://github.com/ika-rwth-aachen/ros2-depth-anything-v3-trt) as the **depth estimation model**
 
+To build `depth_anything_v3` from source, follow instructions:
+
+```bash
+cd ~/ros2_ws/src
+
+git clone https://github.com/ika-rwth-aachen/ros2-depth-anything-v3-trt.git
+
+cd ..
+
+rosdep install --from-paths src --ignore-src -r -y
+
+# From your ROS 2 workspace
+colcon build --packages-select depth_anything_v3 --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+source install/setup.bash
+```
+
+# Model preparation
+1. Obtain the ONNX model (Two Options): 
+  A. Download the ONNX file from [Huggingface](https://huggingface.co/TillBeemelmanns/Depth-Anything-V3-ONNX)
+  B. Generate ONNX following the instruction [here](https://github.com/ika-rwth-aachen/ros2-depth-anything-v3-trt/blob/main/onnx/README.md)
+2. Place model file: Put the ONNX/engine file in the models/ directory
+3. Update configuration: Modify config/nav2_depth_ai_params.yaml with the correct model path
+4. (Optional) Generate TensorRT engine for optimized inference (if using TensorRT backend):
+
+```bash
+./src/ros2-depth-anything-v3-trt/generate_engines.sh
+```
+
+For the upstream build instructions, see:
+
+https://github.com/ika-rwth-aachen/ros2-depth-anything-v3-trt/tree/main#building
+
 ---
 
 ### Image Source
@@ -90,19 +123,27 @@ image_source:
 Image preprocessing can be enabled to crop, decimate, or resize the image before depth estimation.
 
 ```yaml
-image_preprocessor:
-  enabled: true
-  parameters:
-    resize:
-      width: 640
-      height: 384
-    crop_decimate:
-      x_offset: 0
-      y_offset: 0
-      width: 640
-      height: 480
-      decimation_x: 1
-      decimation_y: 1
+usb_cam:
+  ros__parameters:
+    video_device: /dev/video0
+    image_width: 640
+    image_height: 480
+    pixel_format: mjpeg2rgb
+    frame_rate: 30.0
+
+crop_decimate:
+  ros__parameters:
+    x_offset: 0
+    y_offset: 0
+    width: 640
+    height: 480
+    decimation_x: 1
+    decimation_y: 1
+
+resize:
+  ros__parameters:
+    width: 504
+    height: 280
 ```
 
 Preprocessing nodes used:
@@ -119,30 +160,28 @@ If the input type is **RGB**, a depth estimation model is used to generate a dep
 Example configuration:
 
 ```yaml
-depth_estimator:
-  enabled: true
-  package: depth_anything_v3
-  plugin: depth_anything_v3::DepthAnythingV3Node
-  model_path: models/DA3METRIC-LARGE.fp16-batch1.engine
-  model_path_name_argument: 'onnx_path'
-  parameters:
-    precision: fp16
-  topics:
-    input_image: "~/input/image"
-    input_camera_info: "~/input/camera_info"
-    output_depth: "~/output/depth_image"
+depth_anything_v3:
+  ros__parameters:
+    # Model configuration
+    onnx_path: "~/ros2_ws/install/depth_anything_v3/share/depth_anything_v3/models/DA3METRIC-LARGE.onnx"
+    precision: "fp16"  # fp16 or fp32
+    
+    # Debug configuration
+    enable_debug: true
+    debug_colormap: "JET"  # JET, HOT, COOL, SPRING, SUMMER, AUTUMN, WINTER, BONE, GRAY, HSV, PARULA, PLASMA, INFERNO, VIRIDIS, MAGMA, CIVIDIS
+    debug_filepath: "/tmp/depth_anything_v3_debug/"
+    write_colormap: false
+    debug_colormap_min_depth: 0.0    # Minimum depth value for colormap visualization
+    debug_colormap_max_depth: 50.0   # Maximum depth value for colormap visualization
+    sky_threshold: 0.3               # Threshold for sky classification (lower = more sky)
+    sky_depth_cap: 200.0             # Maximum depth value to fill sky regions
+    
+    # Point cloud downsampling (1 = no downsampling, 10 = every 10th point)
+    point_cloud_downsample_factor: 2
+    
+    # Point cloud colorization with RGB from input image
+    colorize_point_cloud: true  # Set to true to publish RGB point cloud instead of XYZ only
 ```
-| Parameter                  | Description                                                                            |
-| -------------------------- | -------------------------------------------------------------------------------------- |
-| `enabled`                  | Enables or disables the depth estimation stage in the pipeline.                        |
-| `package`                  | ROS 2 package that provides the depth estimation node.                                 |
-| `plugin`                   | Fully qualified composable node plugin used to start the depth estimation node.        |
-| `model_path`               | Path to the model file used for inference.                                             |
-| `model_path_name_argument` | Name of the parameter expected by the depth estimation node to receive the model path. |
-| `parameters`               | Additional parameters passed to the depth estimation node.                             |
-| `topics.input_image`       | Topic used as the input RGB image for the depth estimator.                             |
-| `topics.input_camera_info` | Camera calibration information associated with the input image.                        |
-| `topics.output_depth`      | Topic where the generated depth image will be published.                               |
 
 ---
 

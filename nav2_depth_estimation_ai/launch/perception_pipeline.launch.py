@@ -160,6 +160,7 @@ def generate_launch_description() -> LaunchDescription:
             LoadComposableNodes(
                 target_container=container_name,
                 composable_node_descriptions=[
+                    # Replace with your sensor driver as you see fit (i.e. realsense)
                     ComposableNode(
                         package="usb_cam",
                         plugin="usb_cam::UsbCamNode",

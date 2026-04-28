@@ -78,6 +78,7 @@ def generate_launch_description() -> LaunchDescription:
     load_nodes = GroupAction(
         condition=IfCondition(PythonExpression(["not ", use_composition])),
         actions=[
+             # Replace with your sensor driver as you see fit (i.e. realsense)
             Node(
                 package="usb_cam",
                 name="usb_cam",

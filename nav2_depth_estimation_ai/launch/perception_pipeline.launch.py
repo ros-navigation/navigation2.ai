@@ -1,206 +1,290 @@
-import os
-import yaml
-
 from launch import LaunchDescription
-from launch.actions import LogInfo
-from launch_ros.actions import ComposableNodeContainer
+from launch_ros.actions import LoadComposableNodes, Node
 from launch_ros.descriptions import ComposableNode
+from launch.conditions import IfCondition
+from launch.substitutions import PathJoinSubstitution
 from ament_index_python.packages import get_package_share_directory
+from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.actions import DeclareLaunchArgument, GroupAction, SetEnvironmentVariable
 
-# -------------------------------
-# Internal pipeline topic contracts
-# -------------------------------
-PIPELINE_IMAGE_RAW = '/pipeline/image_raw'
-PIPELINE_CAMERA_INFO = '/pipeline/camera_info'
-PIPELINE_IMAGE_PREPROCESSED = '/pipeline/image_preprocessed'
-PIPELINE_CAMERA_INFO_PREPROCESSED = '/pipeline/camera_info_preprocessed'
-PIPELINE_IMAGE_PREPROCESSED_COMPRESSED = '/pipeline/image_preprocessed/compressed'
-PIPELINE_IMAGE_DEPTH = '/pipeline/depth'
 
-def load_yaml(file_path):
-    with open(file_path, 'r') as f:
-        return yaml.safe_load(f)
+def generate_launch_description() -> LaunchDescription:
+    # Get the launch directory
+    nav2_depth_ai_dir = get_package_share_directory("nav2_depth_estimation_ai")
 
-def generate_launch_description():
+    # Create the launch configuration variables
+    container_name = LaunchConfiguration("container_name")
+    params_file = LaunchConfiguration("params_file")
+    use_intra_process_comms = LaunchConfiguration("use_intra_process_comms")
+    use_usb_cam = LaunchConfiguration("use_usb_cam")
+    use_depth_anything = LaunchConfiguration("use_depth_anything")
+    use_composition = LaunchConfiguration("use_composition")
+    container_name = LaunchConfiguration("container_name")
+    use_respawn = LaunchConfiguration("use_respawn")
+    log_level = LaunchConfiguration("log_level")
 
-    cfg = load_yaml(
-        os.path.join(
-            get_package_share_directory('nav2_depth_estimation_ai'),
-            'config',
-            'perception_pipeline.yaml'
-        )
-    )
-    
-    nodes = []
-    launch_actions = []
-
-    source_type = cfg['image_source'].get('type')
-    preprocessing_enabled = cfg.get('image_preprocessor', {}).get('enabled', True)
-    depth_enabled = cfg.get('depth_estimator', {}).get('enabled', True)
-
-    if source_type is None:
-        raise RuntimeError(
-            "Missing required field 'image_source.type' in configuration. "
-            "It must be set to either 'rgb' or 'depth'."
-        )
-
-    if source_type not in ('rgb', 'depth'):
-        raise RuntimeError(
-            f"Invalid image_source.type='{source_type}'. "
-            "Allowed values are: 'rgb' or 'depth'."
-        )
-        
-    if source_type == 'rgb' and not depth_enabled:
-        launch_actions.append(
-            LogInfo(
-                msg=(
-                    "[WARNING] Projection requires depth, but "
-                    "image_source.type='rgb' and depth_estimator is disabled."
-                )
-            )
-        )
-
-    # ----------------------------------
-    # 1) Image Source - likely your camera driver (realsense, ML camera, etc)
-    # ----------------------------------
-    nodes.append(
-        ComposableNode(
-            name='image_source',
-            package=cfg['image_source']['package'],
-            plugin=cfg['image_source']['plugin'],
-            parameters=[cfg['image_source'].get('parameters', {})],
-            remappings=[
-                (cfg['image_source']['topics']['output_topic'], PIPELINE_IMAGE_RAW),
-                (cfg['image_source']['topics']['camera_info_topic'], PIPELINE_CAMERA_INFO),
-            ],
-            extra_arguments=[{'use_intra_process_comms': True}],
-        )
+    stdout_linebuf_envvar = SetEnvironmentVariable(
+        "RCUTILS_LOGGING_BUFFERED_STREAM", "1"
     )
 
-    # ----------------------------------
-    # 2) Image Preprocessing
-    # ----------------------------------
-    if preprocessing_enabled:
-        nodes.append(
-            ComposableNode(
-                name='image_crop_decimate',
-                package='image_proc',
-                plugin='image_proc::CropDecimateNode',
-                parameters=[
-                    cfg['image_preprocessor']['parameters']['crop_decimate']
-                ],
-                remappings=[
-                    ('/in/image_raw', PIPELINE_IMAGE_RAW),
-                    ('/in/camera_info', PIPELINE_CAMERA_INFO),
-                    ('/out/image_raw', '/image_crop_decimate/image'),
-                    ('/out/camera_info', '/image_crop_decimate/camera_info')
-                ],
-                extra_arguments=[{'use_intra_process_comms': True}],
-            )
-        )
-
-        nodes.append(
-            ComposableNode(
-                name='image_resize',
-                package='image_proc',
-                plugin='image_proc::ResizeNode',
-                parameters=[
-                    cfg['image_preprocessor']['parameters']['resize']
-                ],
-                remappings=[
-                    ('/image/image_raw', '/image_crop_decimate/image'),
-                    ('/image/camera_info', '/image_crop_decimate/camera_info'),
-                    ('/resize/image_raw', PIPELINE_IMAGE_PREPROCESSED),
-                    ('/resize/image_raw/compressed', PIPELINE_IMAGE_PREPROCESSED_COMPRESSED),
-                    ('/resize/camera_info', PIPELINE_CAMERA_INFO_PREPROCESSED)
-                ],
-                extra_arguments=[{'use_intra_process_comms': True}],
-            )
-        )
-
-        depth_input_image = PIPELINE_IMAGE_PREPROCESSED_COMPRESSED
-        depth_input_camera_info = PIPELINE_CAMERA_INFO_PREPROCESSED
-
-    else:
-        depth_input_image = PIPELINE_IMAGE_RAW
-        depth_input_camera_info = PIPELINE_CAMERA_INFO
-
-    # ----------------------------------
-    # 3) Depth Estimator
-    # ----------------------------------
-    if depth_enabled and (source_type=='rgb') :
-
-        depth_cfg = cfg['depth_estimator']
-        model_path_cfg = depth_cfg['model_path']
-        if os.path.isabs(model_path_cfg):
-            absolute_model_path = model_path_cfg
-        else:
-            pkg_share = get_package_share_directory(depth_cfg['package'])
-            absolute_model_path = os.path.join(pkg_share, model_path_cfg)
-
-        if not os.path.exists(absolute_model_path):
-            raise RuntimeError(
-                f"[DepthEstimator] Model file not found: {absolute_model_path}"
-            )
-
-        depth_params = depth_cfg.get('parameters', {}).copy()
-        depth_params[depth_cfg.get('model_path_name_argument')] = absolute_model_path
-
-        depth_topics = depth_cfg['topics']
-
-        nodes.append(
-            ComposableNode(
-                name='depth_estimator',
-                package=depth_cfg['package'],
-                plugin=depth_cfg['plugin'],
-                parameters=[depth_params],
-                remappings=[
-                    (depth_topics['input_image'], depth_input_image),
-                    (depth_topics['input_camera_info'], depth_input_camera_info),
-                    (depth_topics['output_depth'], PIPELINE_IMAGE_DEPTH),
-                ],
-                extra_arguments=[{'use_intra_process_comms': True}],
-            )
-        )
-
-        image_for_projection = PIPELINE_IMAGE_DEPTH
-
-    else:
-        image_for_projection = depth_input_image
-
-    # ----------------------------------
-    # 4) PointCloud Projection
-    # ----------------------------------
-    nodes.append(
-        ComposableNode(
-            name='pointcloud_projection',
-            package='depth_image_proc',
-            plugin='depth_image_proc::PointCloudXyzNode',
-            parameters=[{
-                'queue_size': 10,
-                'approximate_sync': False,
-                'use_sim_time': False
-            }],
-            remappings=[
-                ('image_rect', image_for_projection),
-                ('camera_info', depth_input_camera_info),
-                ('points', '/pipeline/points'),
-            ],
-            extra_arguments=[{'use_intra_process_comms': True}],
-        )
+    declare_params_file_cmd = DeclareLaunchArgument(
+        "params_file",
+        default_value=PathJoinSubstitution(
+            [nav2_depth_ai_dir, "params", "nav2_depth_ai_params.yaml"]
+        ),
+        description="Full path to the ROS2 parameters file to use for all launched nodes",
     )
 
-    # ----------------------------------
-    # Container
-    # ----------------------------------
-    container = ComposableNodeContainer(
-        name='perception_container',
-        namespace='',
-        package='rclcpp_components',
-        executable='component_container',
-        composable_node_descriptions=nodes,
-        output='screen',
+    declare_use_usb_cam_cmd = DeclareLaunchArgument(
+        "use_usb_cam",
+        default_value="True",
+        description="Whether to use Usb Cam",
     )
 
-    return LaunchDescription(launch_actions + [container])
+    declare_use_depth_anything_cmd = DeclareLaunchArgument(
+        "use_depth_anything",
+        default_value="True",
+        description="Whether to use Depth Anything",
+    )
 
+    declare_use_composition_cmd = DeclareLaunchArgument(
+        "use_composition",
+        default_value="True",
+        description="Whether to use composed bringup",
+    )
+
+    declare_use_intra_process_comms_cmd = DeclareLaunchArgument(
+        "use_intra_process_comms",
+        default_value="True",
+        description="Whether to use intra process communications",
+    )
+
+    declare_container_name_cmd = DeclareLaunchArgument(
+        "container_name",
+        default_value="nav2_depth_ai_container",
+        description="the name of container that nodes will load in if use composition",
+    )
+
+    declare_use_respawn_cmd = DeclareLaunchArgument(
+        "use_respawn",
+        default_value="False",
+        description="Whether to respawn if a node crashes. Applied when composition is disabled.",
+    )
+
+    declare_log_level_cmd = DeclareLaunchArgument(
+        "log_level", default_value="info", description="log level"
+    )
+
+    load_nodes = GroupAction(
+        condition=IfCondition(PythonExpression(["not ", use_composition])),
+        actions=[
+            Node(
+                package="usb_cam",
+                name="usb_cam",
+                executable="usb_cam_exe",
+                output="screen",
+                respawn=use_respawn,
+                parameters=[params_file],
+                remapping=[
+                    ("/camera_info", "/pipeline/camera_info"),
+                    ("/image_raw", "/pipeline/image_raw"),
+                ],
+                arguments=["--ros-args", "--log-level", log_level],
+                condition=IfCondition(use_usb_cam),
+            ),
+            Node(
+                package="image_proc",
+                name="crop_decimate",
+                executable="crop_decimate_node",
+                output="screen",
+                respawn=use_respawn,
+                parameters=[params_file],
+                remapping=[
+                    ("/in/camera_info", "/pipeline/camera_info"),
+                    ("/in/image_raw", "/pipeline/image_raw"),
+                    ("/out/camera_info", "/image_crop_decimate/camera_info"),
+                    ("/out/image_raw", "/image_crop_decimate/image"),
+                ],
+                arguments=["--ros-args", "--log-level", log_level],
+            ),
+            Node(
+                package="image_proc",
+                name="resize",
+                executable="resize_node",
+                output="screen",
+                respawn=use_respawn,
+                parameters=[params_file],
+                remapping=[
+                    ("/image/camera_info", "/image_crop_decimate/camera_info"),
+                    ("/image/image_raw", "/image_crop_decimate/image_raw"),
+                    # NOTE: this camera_info topic is not remapping
+                    # (
+                    #     "/resize/camera_info",
+                    #     "/pipeline/camera_info_preprocessed",
+                    # ),
+                    # ("/resize/image_raw", "/pipeline/image_preprocessed"),
+                    # (
+                    #     "/resize/image_raw/compressed",
+                    #     "/pipeline/image_preprocessed/compressed",
+                    # ),
+                ],
+                arguments=["--ros-args", "--log-level", log_level],
+            ),
+            Node(
+                package="depth_anything_v3",
+                name="depth_anything_v3",
+                executable="depth_anything_v3_exe",
+                output="screen",
+                respawn=use_respawn,
+                parameters=[params_file],
+                remapping=[
+                    ("~/input/camera_info", "/resize/camera_info"),
+                    ("~/input/image", "/resize/image_raw/compressed"),
+                    ("~/output/depth_image", "depth_image"),
+                ],
+                arguments=["--ros-args", "--log-level", log_level],
+                condition=IfCondition(use_depth_anything),
+            ),
+            Node(
+                package="depth_image_proc",
+                name="pointcloud",
+                executable="point_cloud_xyzrgb_node",
+                output="screen",
+                respawn=use_respawn,
+                parameters=[params_file],
+                remapping=[
+                    ("rgb/camera_info", "/resize/camera_info"),
+                    ("rgb/image_rect_color", "/resize/image_raw"),
+                    ("depth_registered/image_rect", "depth_image"),
+                    ("points", "/pipeline/points"),
+                ],
+                arguments=["--ros-args", "--log-level", log_level],
+            ),
+        ],
+    )
+
+    load_composable_nodes = GroupAction(
+        condition=IfCondition(use_composition),
+        actions=[
+            LoadComposableNodes(
+                target_container=container_name,
+                composable_node_descriptions=[
+                    ComposableNode(
+                        package="usb_cam",
+                        plugin="usb_cam::UsbCamNode",
+                        name="usb_cam",
+                        parameters=[params_file],
+                        remappings=[
+                            ("/camera_info", "/pipeline/camera_info"),
+                            ("/image_raw", "/pipeline/image_raw"),
+                        ],
+                        extra_arguments=[
+                            {"use_intra_process_comms": use_intra_process_comms}
+                        ],
+                        condition=IfCondition(use_usb_cam),
+                    ),
+                    ComposableNode(
+                        package="image_proc",
+                        plugin="image_proc::CropDecimateNode",
+                        name="crop_decimate",
+                        parameters=[params_file],
+                        remappings=[
+                            ("/in/camera_info", "/pipeline/camera_info"),
+                            ("/in/image_raw", "/pipeline/image_raw"),
+                            ("/out/camera_info", "/image_crop_decimate/camera_info"),
+                            ("/out/image_raw", "/image_crop_decimate/image"),
+                        ],
+                        extra_arguments=[
+                            {"use_intra_process_comms": use_intra_process_comms}
+                        ],
+                    ),
+                    ComposableNode(
+                        package="image_proc",
+                        plugin="image_proc::ResizeNode",
+                        name="resize",
+                        parameters=[params_file],
+                        remappings=[
+                            ("/image/camera_info", "/image_crop_decimate/camera_info"),
+                            ("/image/image_raw", "/image_crop_decimate/image"),
+                            # NOTE: this camera_info topic is not remapping
+                            # (
+                            #     "/resize/camera_info",
+                            #     "/pipeline/camera_info_preprocessed",
+                            # ),
+                            # ("/resize/image_raw", "/pipeline/image_preprocessed"),
+                            # (
+                            #     "/resize/image_raw/compressed",
+                            #     "/pipeline/image_preprocessed/compressed",
+                            # ),
+                        ],
+                        extra_arguments=[
+                            {"use_intra_process_comms": use_intra_process_comms}
+                        ],
+                    ),
+                    ComposableNode(
+                        package="depth_anything_v3",
+                        plugin="depth_anything_v3::DepthAnythingV3Node",
+                        name="depth_anything_v3",
+                        parameters=[params_file],
+                        remappings=[
+                            ("~/input/camera_info", "/resize/camera_info"),
+                            ("~/input/image", "/resize/image_raw/compressed"),
+                            ("~/output/depth_image", "depth_image"),
+                        ],
+                        extra_arguments=[
+                            {"use_intra_process_comms": use_intra_process_comms}
+                        ],
+                        condition=IfCondition(use_depth_anything),
+                    ),
+                    ComposableNode(
+                        package="depth_image_proc",
+                        plugin="depth_image_proc::PointCloudXyzrgbNode",
+                        name="pointcloud",
+                        parameters=[params_file],
+                        remappings=[
+                            ("rgb/camera_info", "/resize/camera_info"),
+                            ("rgb/image_rect_color", "/resize/image_raw"),
+                            ("depth_registered/image_rect", "depth_image"),
+                            ("points", "/pipeline/points"),
+                        ],
+                        extra_arguments=[
+                            {"use_intra_process_comms": use_intra_process_comms}
+                        ],
+                    ),
+                ],
+            )
+        ],
+    )
+
+    container = Node(
+        package="rclcpp_components",
+        executable="component_container",
+        name=container_name,
+        output="screen",
+        parameters=[{"use_intra_process_comms": use_intra_process_comms}],
+        arguments=["--ros-args", "--log-level", log_level],
+        condition=IfCondition(use_composition),
+    )
+
+    # Create the launch description and populate
+    ld = LaunchDescription()
+
+    # Set environment variables
+    ld.add_action(stdout_linebuf_envvar)
+
+    # Declare the launch options
+    ld.add_action(declare_params_file_cmd)
+    ld.add_action(declare_use_usb_cam_cmd)
+    ld.add_action(declare_use_depth_anything_cmd)
+    ld.add_action(declare_use_composition_cmd)
+    ld.add_action(declare_use_intra_process_comms_cmd)
+    ld.add_action(declare_container_name_cmd)
+    ld.add_action(declare_use_respawn_cmd)
+    ld.add_action(declare_log_level_cmd)
+
+    # Add the actions to launch
+    ld.add_action(load_nodes)
+    ld.add_action(container)
+    ld.add_action(load_composable_nodes)
+
+    return ld

@@ -151,6 +151,7 @@ Preprocessing nodes used:
 * `image_proc::CropDecimateNode`
 * `image_proc::ResizeNode`
 
+However, others may be easily added into the pipeline if necessary.
 ---
 
 ### Depth Estimator

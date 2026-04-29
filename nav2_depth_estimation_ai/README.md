@@ -163,7 +163,7 @@ Example configuration:
 depth_anything_v3:
   ros__parameters:
     # Model configuration
-    onnx_path: "~/ros2_ws/install/depth_anything_v3/share/depth_anything_v3/models/DA3METRIC-LARGE.onnx"
+    onnx_path: "$(find-pkg-share depth_anything_v3)/models/DA3METRIC-LARGE.onnx"
     precision: "fp16"  # fp16 or fp32
     
     # Debug configuration

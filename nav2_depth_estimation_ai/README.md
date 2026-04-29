@@ -115,16 +115,6 @@ image_source:
     camera_info_topic: /camera_info
 ```
 
-| Parameter                  | Description                                                    |
-| -------------------------- | -------------------------------------------------------------- |
-| `type`                     | Specifies the input image type used by the pipeline. Supported types: `rgb` or `depth`           |
-| `package`                  | ROS 2 package that provides the image source node.             |
-| `plugin`                   | Fully qualified composable node plugin used to start the node. |
-| `parameters`               | Configuration parameters passed to the image source node.      |
-| `topics.output_topic`      | Topic where the node publishes the image stream.               |
-| `topics.camera_info_topic` | Topic where the node publishes camera calibration information. |
-
-
 ---
 
 ### Image Preprocessing

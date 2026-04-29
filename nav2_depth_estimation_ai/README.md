@@ -72,6 +72,15 @@ source install/setup.bash
   B. Generate ONNX following the instruction [here](https://github.com/ika-rwth-aachen/ros2-depth-anything-v3-trt/blob/main/onnx/README.md)
 2. Place model file: Put the ONNX/engine file in the models/ directory
 3. Update configuration: Modify config/nav2_depth_ai_params.yaml with the correct model path
+
+```yaml
+depth_anything_v3:
+  ros__parameters:
+    # Model configuration
+    onnx_path: "$(find-pkg-share depth_anything_v3)/models/DA3METRIC-LARGE.onnx"
+    precision: "fp16"  # fp16 or fp32
+```
+
 4. (Optional) Generate TensorRT engine for optimized inference (if using TensorRT backend):
 
 ```bash

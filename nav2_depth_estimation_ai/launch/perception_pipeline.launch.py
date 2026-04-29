@@ -6,6 +6,8 @@ from launch.substitutions import PathJoinSubstitution
 from ament_index_python.packages import get_package_share_directory
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch.actions import DeclareLaunchArgument, GroupAction, SetEnvironmentVariable
+from launch_ros.descriptions import ParameterFile
+from nav2_common.launch import RewrittenYaml
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -22,6 +24,14 @@ def generate_launch_description() -> LaunchDescription:
     container_name = LaunchConfiguration("container_name")
     use_respawn = LaunchConfiguration("use_respawn")
     log_level = LaunchConfiguration("log_level")
+
+    configured_params = ParameterFile(
+        RewrittenYaml(
+            source_file=params_file,
+            param_rewrites={},
+        ),
+        allow_substs=True,
+    )
 
     stdout_linebuf_envvar = SetEnvironmentVariable(
         "RCUTILS_LOGGING_BUFFERED_STREAM", "1"
@@ -85,8 +95,8 @@ def generate_launch_description() -> LaunchDescription:
                 executable="usb_cam_exe",
                 output="screen",
                 respawn=use_respawn,
-                parameters=[params_file],
-                remapping=[
+                parameters=[configured_params],
+                remappings=[
                     ("/camera_info", "/pipeline/camera_info"),
                     ("/image_raw", "/pipeline/image_raw"),
                 ],
@@ -99,8 +109,8 @@ def generate_launch_description() -> LaunchDescription:
                 executable="crop_decimate_node",
                 output="screen",
                 respawn=use_respawn,
-                parameters=[params_file],
-                remapping=[
+                parameters=[configured_params],
+                remappings=[
                     ("/in/camera_info", "/pipeline/camera_info"),
                     ("/in/image_raw", "/pipeline/image_raw"),
                     ("/out/camera_info", "/image_crop_decimate/camera_info"),
@@ -114,8 +124,8 @@ def generate_launch_description() -> LaunchDescription:
                 executable="resize_node",
                 output="screen",
                 respawn=use_respawn,
-                parameters=[params_file],
-                remapping=[
+                parameters=[configured_params],
+                remappings=[
                     ("/image/camera_info", "/image_crop_decimate/camera_info"),
                     ("/image/image_raw", "/image_crop_decimate/image_raw"),
                 ],
@@ -127,8 +137,8 @@ def generate_launch_description() -> LaunchDescription:
                 executable="depth_anything_v3_exe",
                 output="screen",
                 respawn=use_respawn,
-                parameters=[params_file],
-                remapping=[
+                parameters=[configured_params],
+                remappings=[
                     ("~/input/camera_info", "/resize/camera_info"),
                     ("~/input/image", "/resize/image_raw"),
                     ("~/output/depth_image", "depth_image"),
@@ -142,8 +152,8 @@ def generate_launch_description() -> LaunchDescription:
                 executable="point_cloud_xyzrgb_node",
                 output="screen",
                 respawn=use_respawn,
-                parameters=[params_file],
-                remapping=[
+                parameters=[configured_params],
+                remappings=[
                     ("rgb/camera_info", "/resize/camera_info"),
                     ("rgb/image_rect_color", "/resize/image_raw"),
                     ("depth_registered/image_rect", "depth_image"),
@@ -165,7 +175,7 @@ def generate_launch_description() -> LaunchDescription:
                         package="usb_cam",
                         plugin="usb_cam::UsbCamNode",
                         name="usb_cam",
-                        parameters=[params_file],
+                        parameters=[configured_params],
                         remappings=[
                             ("/camera_info", "/pipeline/camera_info"),
                             ("/image_raw", "/pipeline/image_raw"),
@@ -179,7 +189,7 @@ def generate_launch_description() -> LaunchDescription:
                         package="image_proc",
                         plugin="image_proc::CropDecimateNode",
                         name="crop_decimate",
-                        parameters=[params_file],
+                        parameters=[configured_params],
                         remappings=[
                             ("/in/camera_info", "/pipeline/camera_info"),
                             ("/in/image_raw", "/pipeline/image_raw"),
@@ -194,7 +204,7 @@ def generate_launch_description() -> LaunchDescription:
                         package="image_proc",
                         plugin="image_proc::ResizeNode",
                         name="resize",
-                        parameters=[params_file],
+                        parameters=[configured_params],
                         remappings=[
                             ("/image/camera_info", "/image_crop_decimate/camera_info"),
                             ("/image/image_raw", "/image_crop_decimate/image"),
@@ -217,7 +227,7 @@ def generate_launch_description() -> LaunchDescription:
                         package="depth_anything_v3",
                         plugin="depth_anything_v3::DepthAnythingV3Node",
                         name="depth_anything_v3",
-                        parameters=[params_file],
+                        parameters=[configured_params],
                         remappings=[
                             ("~/input/camera_info", "/resize/camera_info"),
                             ("~/input/image", "/resize/image_raw/compressed"),
@@ -232,7 +242,7 @@ def generate_launch_description() -> LaunchDescription:
                         package="depth_image_proc",
                         plugin="depth_image_proc::PointCloudXyzrgbNode",
                         name="pointcloud",
-                        parameters=[params_file],
+                        parameters=[configured_params],
                         remappings=[
                             ("rgb/camera_info", "/resize/camera_info"),
                             ("rgb/image_rect_color", "/resize/image_raw"),

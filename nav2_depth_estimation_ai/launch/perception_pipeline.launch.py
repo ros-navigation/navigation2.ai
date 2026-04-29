@@ -96,10 +96,10 @@ def generate_launch_description() -> LaunchDescription:
                 output="screen",
                 respawn=use_respawn,
                 parameters=[configured_params],
-                remappings=[
-                    ("/camera_info", "/pipeline/camera_info"),
-                    ("/image_raw", "/pipeline/image_raw"),
-                ],
+                # remappings=[
+                #     ("/camera_info", "/pipeline/camera_info"),
+                #     ("/image_raw", "/pipeline/image_raw"),
+                # ],
                 arguments=["--ros-args", "--log-level", log_level],
                 condition=IfCondition(use_usb_cam),
             ),
@@ -111,8 +111,8 @@ def generate_launch_description() -> LaunchDescription:
                 respawn=use_respawn,
                 parameters=[configured_params],
                 remappings=[
-                    ("/in/camera_info", "/pipeline/camera_info"),
-                    ("/in/image_raw", "/pipeline/image_raw"),
+                    ("/in/camera_info", "/camera_info"),
+                    ("/in/image_raw", "/image_raw"),
                     ("/out/camera_info", "/image_crop_decimate/camera_info"),
                     ("/out/image_raw", "/image_crop_decimate/image"),
                 ],
@@ -176,10 +176,10 @@ def generate_launch_description() -> LaunchDescription:
                         plugin="usb_cam::UsbCamNode",
                         name="usb_cam",
                         parameters=[configured_params],
-                        remappings=[
-                            ("/camera_info", "/pipeline/camera_info"),
-                            ("/image_raw", "/pipeline/image_raw"),
-                        ],
+                        # remappings=[
+                        #     ("/camera_info", "/pipeline/camera_info"),
+                        #     ("/image_raw", "/pipeline/image_raw"),
+                        # ],
                         extra_arguments=[
                             {"use_intra_process_comms": use_intra_process_comms}
                         ],
@@ -191,8 +191,8 @@ def generate_launch_description() -> LaunchDescription:
                         name="crop_decimate",
                         parameters=[configured_params],
                         remappings=[
-                            ("/in/camera_info", "/pipeline/camera_info"),
-                            ("/in/image_raw", "/pipeline/image_raw"),
+                            ("/in/camera_info", "/camera_info"),
+                            ("/in/image_raw", "/image_raw"),
                             ("/out/camera_info", "/image_crop_decimate/camera_info"),
                             ("/out/image_raw", "/image_crop_decimate/image"),
                         ],

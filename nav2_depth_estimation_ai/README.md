@@ -70,8 +70,7 @@ source install/setup.bash
 1. Obtain the ONNX model (Two Options): 
   A. Download the ONNX file from [Huggingface](https://huggingface.co/TillBeemelmanns/Depth-Anything-V3-ONNX)
   B. Generate ONNX following the instruction [here](https://github.com/ika-rwth-aachen/ros2-depth-anything-v3-trt/blob/main/onnx/README.md)
-2. Place model file: Put the ONNX/engine file in the models/ directory
-3. Update configuration: Modify config/nav2_depth_ai_params.yaml with the correct model path
+2. Update configuration: Modify config/nav2_depth_ai_params.yaml with the correct model path
 
 ```yaml
 depth_anything_v3:
@@ -81,7 +80,7 @@ depth_anything_v3:
     precision: "fp16"  # fp16 or fp32
 ```
 
-4. (Optional) Generate TensorRT engine for optimized inference (if using TensorRT backend):
+3. (Optional) Generate TensorRT engine for optimized inference (if using TensorRT backend):
 
 ```bash
 ./src/ros2-depth-anything-v3-trt/generate_engines.sh
@@ -253,20 +252,8 @@ local_costmap:
           data_type: "PointCloud2"
 ```
 
+Users can adjust the costmap parameters such as `obstacle_max_range`, `obstacle_min_range`, and `max_obstacle_height` of nav2 launch file based on their specific robot and environment requirements.
 
-## Launch files
-
-```bash
-# ssh to tb3
-ros2 launch turtlebot3_bringup robot.launch.py
-
-# start USB Cam node. Alternatively, you can use any other image source node and update the configuration accordingly.
-ros2 run usb_cam usb_cam_node_exe
-
-ros2 launch nav2_depth_estimation_ai perception_pipeline.launch.py use_sim_time:=false
-
-ros2 launch nav2_depth_estimation_ai nav2_bringup.launch.py
-```
 ---
 
 ## Troubleshooting

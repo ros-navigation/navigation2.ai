@@ -115,6 +115,7 @@ image_source:
     camera_info_topic: /camera_info
 ```
 
+If using a camera with a ROS driver, it may be used instead.
 ---
 
 ### Image Preprocessing

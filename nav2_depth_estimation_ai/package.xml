@@ -15,8 +15,6 @@
   <exec_depend>depth_image_proc</exec_depend>
   <exec_depend>depth_anything_v3</exec_depend>
   <exec_depend>image_proc</exec_depend>
-  <exec_depend>nav2_bringup</exec_depend>
-  <exec_depend>turtlebot3_navigation2</exec_depend>
   <exec_depend>usb_cam</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>

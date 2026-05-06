@@ -2,7 +2,7 @@
 
 This package provides a **perception pipeline** using AI-based depth estimation using DepthAnything V3 from RGB images for use in navigation and mobility tasks.
 
-The pipeline is designed to be **modular and configurable**, allowing users to swap components such as image sources and depth estimation models using a YAML configuration file.
+The pipeline is designed to be **modular and configurable**, allowing users to swap components such as image sources, pre- and post-processing nodes, and depth estimation models by modifying the launch file or configuration file.
 
 All components run as **ROS2 composable nodes** inside a single container for efficient intra-process communication.
 

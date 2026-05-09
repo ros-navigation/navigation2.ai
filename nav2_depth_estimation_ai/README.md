@@ -92,31 +92,6 @@ https://github.com/ika-rwth-aachen/ros2-depth-anything-v3-trt/tree/main#building
 
 ---
 
-### Image Source
-
-Defines the node responsible for providing the **input image stream** to the perception pipeline.
-
-Example configuration:
-
-```yaml
-image_source:
-  type: rgb
-  package: usb_cam
-  plugin: usb_cam::UsbCamNode
-  parameters:
-    video_device: /dev/video0
-    image_width: 640
-    image_height: 480
-    pixel_format: mjpeg2rgb
-    frame_rate: 30.0
-  topics:
-    output_topic: /image_raw
-    camera_info_topic: /camera_info
-```
-
-If using a camera with a ROS driver, it may be used instead.
----
-
 ### Image Preprocessing
 
 Image preprocessing can be enabled to crop, decimate, or resize the image before depth estimation.

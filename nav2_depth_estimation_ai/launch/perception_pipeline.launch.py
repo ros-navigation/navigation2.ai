@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from launch import LaunchDescription
-from launch_ros.actions import LoadComposableNodes, Node
-from launch_ros.descriptions import ComposableNode
-from launch.conditions import IfCondition
-from launch.substitutions import PathJoinSubstitution
 from ament_index_python.packages import get_package_share_directory
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction, SetEnvironmentVariable
-from launch_ros.descriptions import ParameterFile
+from launch.conditions import IfCondition
+from launch.substitutions import (
+    LaunchConfiguration,
+    PathJoinSubstitution,
+    PythonExpression,
+)
+from launch_ros.actions import LoadComposableNodes, Node
+from launch_ros.descriptions import ComposableNode, ParameterFile
 from nav2_common.launch import RewrittenYaml
 
 
@@ -102,7 +104,7 @@ def generate_launch_description() -> LaunchDescription:
     load_nodes = GroupAction(
         condition=IfCondition(PythonExpression(["not ", use_composition])),
         actions=[
-             # Replace with your sensor driver as you see fit (i.e. realsense)
+            # Replace with your sensor driver as you see fit (i.e. realsense)
             Node(
                 package="usb_cam",
                 name="usb_cam",
@@ -110,10 +112,6 @@ def generate_launch_description() -> LaunchDescription:
                 output="screen",
                 respawn=use_respawn,
                 parameters=[configured_params],
-                # remappings=[
-                #     ("/camera_info", "/pipeline/camera_info"),
-                #     ("/image_raw", "/pipeline/image_raw"),
-                # ],
                 arguments=["--ros-args", "--log-level", log_level],
                 condition=IfCondition(use_usb_cam),
             ),
@@ -160,21 +158,22 @@ def generate_launch_description() -> LaunchDescription:
                 arguments=["--ros-args", "--log-level", log_level],
                 condition=IfCondition(use_depth_anything),
             ),
-            Node(
-                package="depth_image_proc",
-                name="pointcloud",
-                executable="point_cloud_xyzrgb_node",
-                output="screen",
-                respawn=use_respawn,
-                parameters=[configured_params],
-                remappings=[
-                    ("rgb/camera_info", "/resize/camera_info"),
-                    ("rgb/image_rect_color", "/resize/image_raw"),
-                    ("depth_registered/image_rect", "depth_image"),
-                    ("points", "/pipeline/points"),
-                ],
-                arguments=["--ros-args", "--log-level", log_level],
-            ),
+            # NOTE: Uncomment if you want to output the point cloud. In this example, we are using point cloud from depth_anything_v3 node.
+            # Node(
+            #     package="depth_image_proc",
+            #     name="pointcloud",
+            #     executable="point_cloud_xyzrgb_node",
+            #     output="screen",
+            #     respawn=use_respawn,
+            #     parameters=[configured_params],
+            #     remappings=[
+            #         ("rgb/camera_info", "/resize/camera_info"),
+            #         ("rgb/image_rect_color", "/resize/image_raw"),
+            #         ("depth_registered/image_rect", "depth_image"),
+            #         ("points", "/pipeline/points"),
+            #     ],
+            #     arguments=["--ros-args", "--log-level", log_level],
+            # ),
         ],
     )
 
@@ -190,10 +189,6 @@ def generate_launch_description() -> LaunchDescription:
                         plugin="usb_cam::UsbCamNode",
                         name="usb_cam",
                         parameters=[configured_params],
-                        # remappings=[
-                        #     ("/camera_info", "/pipeline/camera_info"),
-                        #     ("/image_raw", "/pipeline/image_raw"),
-                        # ],
                         extra_arguments=[
                             {"use_intra_process_comms": use_intra_process_comms}
                         ],
@@ -222,16 +217,6 @@ def generate_launch_description() -> LaunchDescription:
                         remappings=[
                             ("/image/camera_info", "/image_crop_decimate/camera_info"),
                             ("/image/image_raw", "/image_crop_decimate/image"),
-                            # NOTE: this camera_info topic is not remapping
-                            # (
-                            #     "/resize/camera_info",
-                            #     "/pipeline/camera_info_preprocessed",
-                            # ),
-                            # ("/resize/image_raw", "/pipeline/image_preprocessed"),
-                            # (
-                            #     "/resize/image_raw/compressed",
-                            #     "/pipeline/image_preprocessed/compressed",
-                            # ),
                         ],
                         extra_arguments=[
                             {"use_intra_process_comms": use_intra_process_comms}
@@ -244,7 +229,7 @@ def generate_launch_description() -> LaunchDescription:
                         parameters=[configured_params],
                         remappings=[
                             ("~/input/camera_info", "/resize/camera_info"),
-                            ("~/input/image", "/resize/image_raw/compressed"),
+                            ("~/input/image", "/resize/image_raw"),
                             ("~/output/depth_image", "depth_image"),
                         ],
                         extra_arguments=[
@@ -252,21 +237,22 @@ def generate_launch_description() -> LaunchDescription:
                         ],
                         condition=IfCondition(use_depth_anything),
                     ),
-                    ComposableNode(
-                        package="depth_image_proc",
-                        plugin="depth_image_proc::PointCloudXyzrgbNode",
-                        name="pointcloud",
-                        parameters=[configured_params],
-                        remappings=[
-                            ("rgb/camera_info", "/resize/camera_info"),
-                            ("rgb/image_rect_color", "/resize/image_raw"),
-                            ("depth_registered/image_rect", "depth_image"),
-                            ("points", "/pipeline/points"),
-                        ],
-                        extra_arguments=[
-                            {"use_intra_process_comms": use_intra_process_comms}
-                        ],
-                    ),
+                    # NOTE: Uncomment if you want to output the point cloud. In this example, we are using point cloud from depth_anything_v3 node.
+                    # ComposableNode(
+                    #     package="depth_image_proc",
+                    #     plugin="depth_image_proc::PointCloudXyzrgbNode",
+                    #     name="pointcloud",
+                    #     parameters=[configured_params],
+                    #     remappings=[
+                    #         ("rgb/camera_info", "/resize/camera_info"),
+                    #         ("rgb/image_rect_color", "/resize/image_raw"),
+                    #         ("depth_registered/image_rect", "depth_image"),
+                    #         ("points", "/pipeline/points"),
+                    #     ],
+                    #     extra_arguments=[
+                    #         {"use_intra_process_comms": use_intra_process_comms}
+                    #     ],
+                    # ),
                 ],
             )
         ],

@@ -44,11 +44,12 @@ depth_anything_v3:
     colorize_point_cloud: true  # Set to true to publish RGB point cloud instead of XYZ only
 
 
-pointcloud:
-  ros__parameters:
-    image_transport: "raw"  # "raw" or "compressed"
-    depth_image_transport: "raw"  # "raw" or "compressed"
-    queue_size: 10
-    invalid_depth: 0.0  # Depth value to use for invalid points (e.g., sky)
-    colorize: true  # Set to true to publish RGB point cloud instead of XYZ only
-    exact_sync: true  # Set to true to use exact sync, false for approximate synchronization
+# NOTE: Uncomment if you want to output the point cloud. In this example, we are using point cloud from depth_anything_v3 node.
+# pointcloud:
+#   ros__parameters:
+#     image_transport: "raw"  # "raw" or "compressed"
+#     depth_image_transport: "raw"  # "raw" or "compressed"
+#     queue_size: 10
+#     invalid_depth: 0.0  # Depth value to use for invalid points (e.g., sky)
+#     colorize: true  # Set to true to publish RGB point cloud instead of XYZ only
+#     exact_sync: true  # Set to true to use exact sync, false for approximate synchronization

@@ -33,6 +33,8 @@ The resulting point cloud can be used by **Nav2 perception pipelines, mapping sy
 
 Perception pipeline that generates depth maps and point clouds from RGB input.
 
+Click on the image below to see the full video.
+
 <a href="https://youtu.be/QDN1uA71su4" target="_blank">
   <img src="https://img.youtube.com/vi/QDN1uA71su4/hqdefault.jpg" alt="Tutorial video for DA3 with Nav2" width="800" height="auto" />
 </a>

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>nav2_depth_filter</name>
+  <version>0.0.1</version>
+  <description>
+    Composable node that cleans a metric depth image (range clamp, optional
+    flying-pixel removal, median de-speckle, small-region outlier removal) before
+    it is projected to a point cloud for a Nav2 costmap. Each stage is
+    disableable; enabled=false passes the image through untouched.
+  </description>
+
+  <maintainer email="vishwa.gw1998@gmail.com">Vishwa</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>sensor_msgs</depend>
+  <depend>libopencv-dev</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
